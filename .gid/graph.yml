@@ -116,12 +116,12 @@ nodes:
       - trust
       - safety
     tasks:
-      - "[x] Implement time-lock auto-approval (24h)"
-      - "[x] Add proof_url + metadata to submissions table"
-      - "[x] Create task_reviews table (bidirectional)"
-      - "[x] Build review submission flow"
-      - "[x] Add auto-approval cron job"
-      - "[x] Update reputation calculation (include poster reviews)"
+      - '[x] Implement time-lock auto-approval (24h)'
+      - '[x] Add proof_url + metadata to submissions table'
+      - '[x] Create task_reviews table (bidirectional)'
+      - '[x] Build review submission flow'
+      - '[x] Add auto-approval cron job'
+      - '[x] Update reputation calculation (include poster reviews)'
   feature-dispute-resolution:
     type: Feature
     layer: application
@@ -132,12 +132,12 @@ nodes:
     tags:
       - phase-2
     tasks:
-      - "[ ] Design dispute workflow (appeal → arbitration → decision)"
-      - "[ ] Create disputes table"
-      - "[ ] API: POST /api/v1/submissions/:id/dispute"
-      - "[ ] Admin arbitration UI (Phase 2A: manual)"
-      - "[ ] Community arbitration (Phase 2B: voting)"
-      - "[ ] Insurance pool mechanism (Phase 2C)"
+      - '[ ] Design dispute workflow (appeal → arbitration → decision)'
+      - '[ ] Create disputes table'
+      - '[ ] API: POST /api/v1/submissions/:id/dispute'
+      - '[ ] Admin arbitration UI (Phase 2A: manual)'
+      - '[ ] Community arbitration (Phase 2B: voting)'
+      - '[ ] Insurance pool mechanism (Phase 2C)'
   component-database:
     type: Component
     layer: infrastructure
@@ -249,10 +249,10 @@ nodes:
     priority: core
     path: src/app/api/cron/auto-approve-submissions/route.ts
     tasks:
-      - "[x] Add auto_approve_at timestamp to submissions"
-      - "[x] Create cron job to check pending submissions"
-      - "[x] Implement autoApprove() function"
-      - "[ ] Notify poster on auto-approval (email/webhook)"
+      - '[x] Add auto_approve_at timestamp to submissions'
+      - '[x] Create cron job to check pending submissions'
+      - '[x] Implement autoApprove() function'
+      - '[ ] Notify poster on auto-approval (email/webhook)'
   comp-proof-system:
     type: Component
     layer: application
@@ -262,11 +262,11 @@ nodes:
     priority: supporting
     path: src/app/api/v1/upload/route.ts
     tasks:
-      - "[x] Add proof_url, proof_metadata to submissions"
-      - "[x] File upload API endpoint"
-      - "[x] Generate SHA256 hash on upload"
-      - "[ ] File upload UI component"
-      - "[ ] Display proof in review UI"
+      - '[x] Add proof_url, proof_metadata to submissions'
+      - '[x] File upload API endpoint'
+      - '[x] Generate SHA256 hash on upload'
+      - '[ ] File upload UI component'
+      - '[ ] Display proof in review UI'
   comp-bidirectional-reviews:
     type: Component
     layer: application
@@ -276,12 +276,12 @@ nodes:
     priority: core
     path: src/app/api/v1/market/tasks/[id]/review-poster/route.ts
     tasks:
-      - "[x] Create task_reviews table schema"
-      - "[x] Migration: add table + indexes"
-      - "[x] API: POST /api/v1/market/tasks/:id/review-poster"
-      - "[x] API: GET /api/v1/users/:id/poster-reviews"
-      - "[x] Update poster reputation calculation (DB trigger)"
-      - "[ ] UI: review form after task completion"
+      - '[x] Create task_reviews table schema'
+      - '[x] Migration: add table + indexes'
+      - '[x] API: POST /api/v1/market/tasks/:id/review-poster'
+      - '[x] API: GET /api/v1/users/:id/poster-reviews'
+      - '[x] Update poster reputation calculation (DB trigger)'
+      - '[ ] UI: review form after task completion'
   data-users:
     type: Data
     layer: domain
@@ -530,6 +530,22 @@ nodes:
       - '[x] POST /api/v1/bot/suggest - Bot建议任务给主人'
       - '[x] POST /api/v1/bot/master-approve - 主人批准/拒绝bot建议'
       - '[x] 实现通知系统（Email/Webhook）通知主人'
+  task-e2e-tests:
+    type: Component
+    description: Playwright-based end-to-end tests for full user journeys
+    layer: application
+    status: active
+    priority: core
+    tasks:
+      - '[x] Install Playwright and configure'
+      - '[x] Create task-lifecycle.spec.ts (create → claim → submit → approve)'
+      - '[x] Create auto-approval.spec.ts (timeout system)'
+      - '[x] Set up CI/CD workflow (GitHub Actions)'
+      - '[ ] Add data-testid attributes to UI components'
+      - '[ ] Create test data seed script'
+      - '[ ] Implement offers.spec.ts'
+      - '[ ] Implement reviews.spec.ts'
+      - '[ ] Implement edge-cases.spec.ts'
 edges:
   - from: feature-marketplace
     to: component-database
@@ -693,7 +709,6 @@ edges:
   - from: task-bot-approval-mode
     to: task-build-bot-auth
     relation: depends_on
-  # Validation system edges
   - from: feature-validation
     to: feature-marketplace
     relation: enables
@@ -724,6 +739,15 @@ edges:
   - from: comp-bidirectional-reviews
     to: data-task-reviews
     relation: depends_on
+  - from: task-e2e-tests
+    to: task-build-submission-api
+    relation: enables
+  - from: task-e2e-tests
+    to: task-build-offer-api
+    relation: enables
+  - from: task-e2e-tests
+    to: comp-time-lock
+    relation: enables
 metadata:
   created: '2026-02-04'
   project_url: https://github.com/tonitangpotato/suitedbot
