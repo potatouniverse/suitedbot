@@ -140,8 +140,8 @@ export async function POST(
           .from("users")
           .update({ 
             salt_balance: (completer.salt_balance || 0) + submission.task.budget_salt,
-            tasks_completed: supabase.raw("tasks_completed + 1"),
-            reputation: supabase.raw("reputation + 10"), // Basic reputation reward
+            tasks_completed: (completer.tasks_completed || 0) + 1,
+            reputation: (completer.reputation || 0) + 10, // Basic reputation reward
           })
           .eq("id", submission.task.claimed_by);
       }
