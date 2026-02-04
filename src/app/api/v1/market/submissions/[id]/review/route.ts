@@ -36,13 +36,14 @@ export async function POST(
     }, { status: 400 });
   }
 
-  // Get submission with task and offer details
+  // Get submission with task, proof, and offer details
   const { data: submission, error: submissionError } = await supabase
     .from("submissions")
     .select(`
       *,
       task:task_id (
         id,
+        title,
         poster_id,
         status,
         claimed_by,
@@ -76,12 +77,13 @@ export async function POST(
 
   // Handle different actions
   if (action === "approve") {
-    // Update submission status
+    // Update submission status and clear auto-approve (since we're reviewing manually)
     const { error: updateError } = await supabase
       .from("submissions")
       .update({ 
         status: "approved",
         reviewer_notes: reviewer_notes || null,
+        auto_approve_at: null,  // Clear auto-approve since manually reviewed
       })
       .eq("id", submissionId);
 
@@ -141,7 +143,7 @@ export async function POST(
           .update({ 
             salt_balance: (completer.salt_balance || 0) + submission.task.budget_salt,
             tasks_completed: (completer.tasks_completed || 0) + 1,
-            reputation: (completer.reputation || 0) + 10, // Basic reputation reward
+            reputation: (completer.reputation || 0) + 10,
           })
           .eq("id", submission.task.claimed_by);
       }
@@ -151,7 +153,14 @@ export async function POST(
       success: true, 
       message: "Submission approved and payment released",
       submission: { ...submission, status: "approved" },
-      transaction
+      transaction,
+      // Prompt worker to review the poster
+      next_action: {
+        type: "review_poster",
+        task_id: submission.task_id,
+        endpoint: `/api/v1/market/tasks/${submission.task_id}/review-poster`,
+        message: "You can now review the task poster to help build trust in the marketplace.",
+      },
     });
   }
 
@@ -161,6 +170,7 @@ export async function POST(
       .update({ 
         status: "rejected",
         reviewer_notes: reviewer_notes || null,
+        auto_approve_at: null,  // Clear auto-approve
       })
       .eq("id", submissionId);
 
@@ -176,7 +186,7 @@ export async function POST(
 
     return NextResponse.json({ 
       success: true, 
-      message: "Submission rejected",
+      message: "Submission rejected. Worker can resubmit.",
       submission: { ...submission, status: "rejected" }
     });
   }
@@ -187,6 +197,7 @@ export async function POST(
       .update({ 
         status: "revision_requested",
         reviewer_notes: reviewer_notes || null,
+        auto_approve_at: null,  // Clear auto-approve while revisions pending
       })
       .eq("id", submissionId);
 
@@ -208,4 +219,79 @@ export async function POST(
   }
 
   return NextResponse.json({ success: false, error: "Unknown action" }, { status: 400 });
+}
+
+// GET /api/v1/market/submissions/[id]/review - Get submission with proof for review
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const supabase = await createSupabaseServerClient();
+  const { id: submissionId } = await params;
+
+  // Get submission with full details including proof
+  const { data: submission, error } = await supabase
+    .from("submissions")
+    .select(`
+      *,
+      submitter:submitter_id (
+        id,
+        display_name,
+        user_type,
+        reputation,
+        tasks_completed
+      ),
+      task:task_id (
+        id,
+        title,
+        description,
+        poster_id,
+        category,
+        currency,
+        budget_salt,
+        budget_usdc
+      )
+    `)
+    .eq("id", submissionId)
+    .single();
+
+  if (error || !submission) {
+    return NextResponse.json({ success: false, error: "Submission not found" }, { status: 404 });
+  }
+
+  // Calculate time remaining for auto-approval
+  let autoApproveInfo = null;
+  if (submission.status === "pending" && submission.auto_approve_at) {
+    const deadline = new Date(submission.auto_approve_at);
+    const now = new Date();
+    const msRemaining = deadline.getTime() - now.getTime();
+    
+    if (msRemaining > 0) {
+      const hoursRemaining = Math.floor(msRemaining / (1000 * 60 * 60));
+      const minutesRemaining = Math.floor((msRemaining % (1000 * 60 * 60)) / (1000 * 60));
+      autoApproveInfo = {
+        deadline: submission.auto_approve_at,
+        hours_remaining: hoursRemaining,
+        minutes_remaining: minutesRemaining,
+        message: `Will auto-approve in ${hoursRemaining}h ${minutesRemaining}m if not reviewed`,
+      };
+    } else {
+      autoApproveInfo = {
+        deadline: submission.auto_approve_at,
+        hours_remaining: 0,
+        minutes_remaining: 0,
+        message: "Auto-approval deadline has passed, awaiting cron job",
+      };
+    }
+  }
+
+  return NextResponse.json({
+    success: true,
+    submission,
+    proof: submission.proof_url ? {
+      url: submission.proof_url,
+      metadata: submission.proof_metadata,
+    } : null,
+    auto_approve: autoApproveInfo,
+  });
 }

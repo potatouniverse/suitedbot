@@ -68,7 +68,7 @@ nodes:
     layer: domain
     name: Work Submission & Review
     description: Workers submit completed work, posters review and approve/reject
-    status: draft
+    status: active
     priority: core
     tags:
       - workflow
@@ -78,7 +78,7 @@ nodes:
     layer: domain
     name: Reputation System
     description: Track completion rate, ratings, reviews to build trust
-    status: draft
+    status: in_progress
     priority: supporting
     tags:
       - trust
@@ -105,6 +105,39 @@ nodes:
       - bot
       - automation
       - hosting
+  feature-validation:
+    type: Feature
+    layer: application
+    name: Validation & Trust System
+    description: Time-locks, proof attachments, bidirectional reviews, and dispute resolution
+    status: active
+    priority: core
+    tags:
+      - trust
+      - safety
+    tasks:
+      - "[x] Implement time-lock auto-approval (24h)"
+      - "[x] Add proof_url + metadata to submissions table"
+      - "[x] Create task_reviews table (bidirectional)"
+      - "[x] Build review submission flow"
+      - "[x] Add auto-approval cron job"
+      - "[x] Update reputation calculation (include poster reviews)"
+  feature-dispute-resolution:
+    type: Feature
+    layer: application
+    name: Dispute Resolution
+    description: Appeal system with manual/community arbitration
+    status: draft
+    priority: supporting
+    tags:
+      - phase-2
+    tasks:
+      - "[ ] Design dispute workflow (appeal → arbitration → decision)"
+      - "[ ] Create disputes table"
+      - "[ ] API: POST /api/v1/submissions/:id/dispute"
+      - "[ ] Admin arbitration UI (Phase 2A: manual)"
+      - "[ ] Community arbitration (Phase 2B: voting)"
+      - "[ ] Insurance pool mechanism (Phase 2C)"
   component-database:
     type: Component
     layer: infrastructure
@@ -189,7 +222,7 @@ nodes:
     layer: application
     name: Submission API
     description: Endpoints for submitting work and reviewing (approve/reject/revision)
-    status: draft
+    status: active
     priority: core
     path: src/app/api/v1/market/submissions/
     tags:
@@ -207,6 +240,48 @@ nodes:
       - api
       - backend
       - auth
+  comp-time-lock:
+    type: Component
+    layer: application
+    name: Time-Lock Auto-Approval
+    description: Auto-approve submissions if poster doesn't review within 24h
+    status: active
+    priority: core
+    path: src/app/api/cron/auto-approve-submissions/route.ts
+    tasks:
+      - "[x] Add auto_approve_at timestamp to submissions"
+      - "[x] Create cron job to check pending submissions"
+      - "[x] Implement autoApprove() function"
+      - "[ ] Notify poster on auto-approval (email/webhook)"
+  comp-proof-system:
+    type: Component
+    layer: application
+    name: Proof Attachment System
+    description: Workers attach evidence (screenshots, files) to submissions
+    status: active
+    priority: supporting
+    path: src/app/api/v1/upload/route.ts
+    tasks:
+      - "[x] Add proof_url, proof_metadata to submissions"
+      - "[x] File upload API endpoint"
+      - "[x] Generate SHA256 hash on upload"
+      - "[ ] File upload UI component"
+      - "[ ] Display proof in review UI"
+  comp-bidirectional-reviews:
+    type: Component
+    layer: application
+    name: Bidirectional Reviews
+    description: Workers can review posters (in addition to poster reviewing worker)
+    status: active
+    priority: core
+    path: src/app/api/v1/market/tasks/[id]/review-poster/route.ts
+    tasks:
+      - "[x] Create task_reviews table schema"
+      - "[x] Migration: add table + indexes"
+      - "[x] API: POST /api/v1/market/tasks/:id/review-poster"
+      - "[x] API: GET /api/v1/users/:id/poster-reviews"
+      - "[x] Update poster reputation calculation (DB trigger)"
+      - "[ ] UI: review form after task completion"
   data-users:
     type: Data
     layer: domain
@@ -241,7 +316,7 @@ nodes:
     type: Data
     layer: domain
     name: Submissions Table
-    description: Delivered work with AI verification fields and review workflow
+    description: Delivered work with AI verification, proof attachments, and time-lock fields
     status: active
     priority: core
     tags:
@@ -267,6 +342,18 @@ nodes:
     tags:
       - database
       - schema
+  data-task-reviews:
+    type: Data
+    layer: domain
+    name: Task Reviews Table
+    description: Bidirectional reviews - workers review posters
+    status: active
+    priority: core
+    path: migrations/004_validation_system.sql
+    tags:
+      - database
+      - schema
+      - trust
   decision-bidirectional:
     type: Decision
     layer: domain
@@ -364,13 +451,14 @@ nodes:
     tasks:
       - '[x] POST /api/v1/market/tasks/:id/submit - Submit work'
       - '[x] POST /api/v1/market/submissions/:id/review - Review submission'
+      - '[x] GET /api/v1/market/submissions/:id/review - Get submission details'
       - '[ ] Test submission workflow end-to-end'
   task-build-bot-auth:
     type: Component
     layer: application
     name: Build Bot Authentication
     description: API key generation and validation for bot users
-    status: draft
+    status: active
     priority: core
     tags:
       - development
@@ -416,7 +504,7 @@ nodes:
     layer: application
     name: Bot Auto-Accept Mode
     description: Bot全自动模式：bot扫描任务、评估能力、自动接单
-    status: draft
+    status: active
     priority: core
     tags:
       - bot
@@ -431,7 +519,7 @@ nodes:
     layer: application
     name: Bot Master Approval Mode
     description: Bot半自动模式：bot发现任务后通知主人确认
-    status: draft
+    status: active
     priority: core
     tags:
       - bot
@@ -469,6 +557,9 @@ edges:
     relation: depends_on
   - from: feature-reputation
     to: data-reviews
+    relation: depends_on
+  - from: feature-reputation
+    to: data-task-reviews
     relation: depends_on
   - from: component-market-ui
     to: component-task-api
@@ -540,6 +631,14 @@ edges:
     to: data-users
     relation: related_to
     description: Reviews reference reviewer_id and reviewed_id
+  - from: data-task-reviews
+    to: data-tasks
+    relation: related_to
+    description: Task reviews link to completed tasks
+  - from: data-task-reviews
+    to: data-users
+    relation: related_to
+    description: Task reviews reference reviewer and reviewed users
   - from: task-build-offer-api
     to: task-setup-supabase
     relation: blocks
@@ -594,116 +693,42 @@ edges:
   - from: task-bot-approval-mode
     to: task-build-bot-auth
     relation: depends_on
+  # Validation system edges
+  - from: feature-validation
+    to: feature-marketplace
+    relation: enables
+  - from: feature-validation
+    to: feature-economy
+    relation: depends_on
+  - from: comp-time-lock
+    to: feature-validation
+    relation: implements
+  - from: comp-proof-system
+    to: feature-validation
+    relation: implements
+  - from: comp-bidirectional-reviews
+    to: feature-validation
+    relation: implements
+  - from: feature-dispute-resolution
+    to: feature-validation
+    relation: enables
+  - from: feature-dispute-resolution
+    to: comp-bidirectional-reviews
+    relation: depends_on
+  - from: comp-time-lock
+    to: component-submission-api
+    relation: depends_on
+  - from: comp-proof-system
+    to: component-submission-api
+    relation: depends_on
+  - from: comp-bidirectional-reviews
+    to: data-task-reviews
+    relation: depends_on
 metadata:
   created: '2026-02-04'
   project_url: https://github.com/tonitangpotato/suitedbot
   domain_url: suitedbot.com
   project_status: MVP in progress
-  next_milestone: Complete API endpoints + Deploy to Vercel
+  next_milestone: Human auth UI + Dispute resolution
   health_score: 95
-  
-  # Validation & Trust System
-  feature-validation:
-    type: Feature
-    layer: application
-    name: Validation & Trust System
-    description: Time-locks, proof attachments, bidirectional reviews, and dispute resolution
-    status: draft
-    priority: core
-    tags:
-      - trust
-      - safety
-    tasks:
-      - "[ ] Implement time-lock auto-approval (24h)"
-      - "[ ] Add proof_url + metadata to submissions table"
-      - "[ ] Create task_reviews table (bidirectional)"
-      - "[ ] Build review submission flow"
-      - "[ ] Add auto-approval cron job"
-      - "[ ] Update reputation calculation (include poster reviews)"
-      
-  comp-time-lock:
-    type: Component
-    layer: application
-    name: Time-Lock Auto-Approval
-    description: Auto-approve submissions if poster doesn't review within 24h
-    status: draft
-    priority: core
-    tasks:
-      - "[ ] Add auto_approve_at timestamp to submissions"
-      - "[ ] Create cron job to check pending submissions"
-      - "[ ] Implement autoApprove() function"
-      - "[ ] Notify poster on auto-approval"
-      
-  comp-proof-system:
-    type: Component
-    layer: application
-    name: Proof Attachment System
-    description: Workers attach evidence (screenshots, files) to submissions
-    status: draft
-    priority: supporting
-    tasks:
-      - "[ ] Add proof_url, proof_metadata to submissions"
-      - "[ ] File upload UI component"
-      - "[ ] Generate SHA256 hash on upload"
-      - "[ ] Display proof in review UI"
-      
-  comp-bidirectional-reviews:
-    type: Component
-    layer: application
-    name: Bidirectional Reviews
-    description: Workers can review posters (in addition to poster reviewing worker)
-    status: draft
-    priority: core
-    tasks:
-      - "[ ] Create task_reviews table schema"
-      - "[ ] Migration: add table + indexes"
-      - "[ ] API: POST /api/v1/tasks/:id/review-poster"
-      - "[ ] UI: review form after task completion"
-      - "[ ] Update poster reputation calculation"
-      
-  feature-dispute-resolution:
-    type: Feature
-    layer: application
-    name: Dispute Resolution
-    description: Appeal system with manual/community arbitration
-    status: draft
-    priority: supporting
-    tags:
-      - phase-2
-    tasks:
-      - "[ ] Design dispute workflow (appeal → arbitration → decision)"
-      - "[ ] Create disputes table"
-      - "[ ] API: POST /api/v1/submissions/:id/dispute"
-      - "[ ] Admin arbitration UI (Phase 2A: manual)"
-      - "[ ] Community arbitration (Phase 2B: voting)"
-      - "[ ] Insurance pool mechanism (Phase 2C)"
-
-edges:
-  # Validation dependencies
-  - from: feature-validation
-    to: feature-marketplace
-    relation: enables
-    
-  - from: feature-validation
-    to: feature-economy
-    relation: depends_on
-    
-  - from: comp-time-lock
-    to: feature-validation
-    relation: implements
-    
-  - from: comp-proof-system
-    to: feature-validation
-    relation: implements
-    
-  - from: comp-bidirectional-reviews
-    to: feature-validation
-    relation: implements
-    
-  - from: feature-dispute-resolution
-    to: feature-validation
-    relation: enables
-    
-  - from: feature-dispute-resolution
-    to: comp-bidirectional-reviews
-    relation: depends_on
+  last_updated: '2026-02-04'

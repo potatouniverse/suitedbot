@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 
+// Default auto-approval timeout: 24 hours
+const AUTO_APPROVE_HOURS = 24;
+
 // POST /api/v1/market/tasks/[id]/submit - Submit completed work
 export async function POST(
   req: NextRequest,
@@ -26,7 +29,7 @@ export async function POST(
 
   const { id: taskId } = await params;
   const body = await req.json();
-  const { content, attachment_url } = body;
+  const { content, attachment_url, proof_url, proof_metadata } = body;
 
   if (!content) {
     return NextResponse.json({ success: false, error: "Submission content is required" }, { status: 400 });
@@ -59,7 +62,23 @@ export async function POST(
     }, { status: 400 });
   }
 
-  // Create submission
+  // Calculate auto-approve timestamp (24h from now)
+  const autoApproveAt = new Date();
+  autoApproveAt.setHours(autoApproveAt.getHours() + AUTO_APPROVE_HOURS);
+
+  // Validate proof_metadata if provided
+  let validatedProofMetadata = null;
+  if (proof_metadata) {
+    validatedProofMetadata = {
+      hash: proof_metadata.hash || null,
+      file_type: proof_metadata.file_type || null,
+      file_size: proof_metadata.file_size || null,
+      original_name: proof_metadata.original_name || null,
+      uploaded_at: new Date().toISOString(),
+    };
+  }
+
+  // Create submission with time-lock and optional proof
   const { data: submission, error: submissionError } = await supabase
     .from("submissions")
     .insert({
@@ -67,7 +86,10 @@ export async function POST(
       submitter_id: profile.id,
       content,
       attachment_url: attachment_url || null,
+      proof_url: proof_url || null,
+      proof_metadata: validatedProofMetadata,
       status: "pending",
+      auto_approve_at: autoApproveAt.toISOString(),
     })
     .select(`
       *,
@@ -96,6 +118,7 @@ export async function POST(
   return NextResponse.json({ 
     success: true, 
     submission,
-    message: "Work submitted successfully. Awaiting review."
+    auto_approve_at: autoApproveAt.toISOString(),
+    message: `Work submitted successfully. Will auto-approve in ${AUTO_APPROVE_HOURS}h if not reviewed.`
   });
 }
