@@ -168,6 +168,148 @@ Every participant is both a potential client and a potential worker.
 - Released only on approval
 - Dispute resolution (manual, Phase 2: arbitration)
 
+## Validation & Trust System
+
+### Current Mechanisms (MVP)
+
+**1. Escrow System**
+- Funds locked when task created
+- Only released after poster approval
+- Automatic refund on rejection
+
+**2. Poster-Only Review**
+- Only task creator can approve/reject submissions
+- Prevents unauthorized approvals
+
+**3. Reputation System**
+- Rating 1-5 stars post-completion
+- Public profile showing:
+  - Total tasks completed/posted
+  - Average rating
+  - Success rate
+
+**4. AI Pre-Review (Optional)**
+- Auto-score submissions 0-100
+- Flag potential issues
+- Human makes final decision
+
+### Immediate Improvements (Phase 1.5)
+
+**1. Time-Lock Auto-Approval**
+```typescript
+// If poster doesn't review within 24h, auto-approve
+if (submission.created_at + 24h < now && status === "pending") {
+  autoApprove(submission);
+  notifyPoster("Task auto-approved due to timeout");
+}
+```
+
+**Benefits:**
+- Prevents poster from holding funds indefinitely
+- Encourages timely review
+- Fair to workers
+
+**2. Proof Attachments**
+```typescript
+// Workers attach evidence
+{
+  "content": "Task completed",
+  "proof_url": "https://...",  // Screenshot, file, etc.
+  "metadata": {
+    "timestamp": "2026-02-04T14:00:00Z",
+    "hash": "sha256...",
+    "file_type": "image/png"
+  }
+}
+```
+
+**Benefits:**
+- Verifiable proof of work
+- Reduces "he said, she said"
+- Builds trust
+
+**3. Bidirectional Reviews**
+```typescript
+// Workers can review posters too
+{
+  "task_review": {
+    "rating": 4,
+    "comment": "Clear requirements, fast payment",
+    "would_work_again": true
+  }
+}
+```
+
+**New table:** `task_reviews`
+- `reviewer_id` (worker)
+- `reviewed_id` (poster)
+- `task_id`
+- `rating` (1-5)
+- `comment`
+
+**Benefits:**
+- Identifies bad actors (posters who never approve)
+- Balanced reputation system
+- Workers can avoid problematic posters
+
+### Phase 2: Dispute Resolution
+
+**Option A: Simple Appeals**
+```
+Worker submits → Poster rejects → Worker appeals
+    ↓
+Manual review by platform admin
+    ↓
+Admin decision (approve/reject/partial payment)
+```
+
+**Option B: Community Arbitration**
+```
+Worker appeals → System selects 3-5 high-reputation users
+    ↓
+Arbitrators review evidence (submission + proof + comments)
+    ↓
+Majority vote decides outcome
+    ↓
+Payment released or refunded based on decision
+```
+
+**Arbitrator Requirements:**
+- Reputation > 4.5
+- >20 completed tasks
+- No recent disputes
+- Random selection to prevent collusion
+
+**Option C: Insurance Pool**
+```
+Every transaction: 1% → insurance pool
+Dispute: Payout from pool (up to task value)
+Reduces individual loss risk
+```
+
+### Phase 3: Advanced Protection
+
+**1. Escrow Milestones**
+- Break large tasks into milestones
+- Approve/pay each milestone separately
+- Reduces risk for both parties
+
+**2. Verified Badges**
+- Email verified
+- Payment method verified
+- Long-standing account (>6 months)
+- High-reputation (>100 tasks, >4.5 rating)
+
+**3. Task Templates**
+- Pre-vetted task formats
+- Clear deliverable specifications
+- Reduces ambiguity
+
+**4. Automated Verification**
+- Code tasks: run tests automatically
+- Data tasks: validate format
+- Content tasks: plagiarism check
+
 ## AI Features
 
 ### Submission Verification

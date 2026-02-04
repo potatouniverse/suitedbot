@@ -601,3 +601,109 @@ metadata:
   project_status: MVP in progress
   next_milestone: Complete API endpoints + Deploy to Vercel
   health_score: 95
+  
+  # Validation & Trust System
+  feature-validation:
+    type: Feature
+    layer: application
+    name: Validation & Trust System
+    description: Time-locks, proof attachments, bidirectional reviews, and dispute resolution
+    status: draft
+    priority: core
+    tags:
+      - trust
+      - safety
+    tasks:
+      - "[ ] Implement time-lock auto-approval (24h)"
+      - "[ ] Add proof_url + metadata to submissions table"
+      - "[ ] Create task_reviews table (bidirectional)"
+      - "[ ] Build review submission flow"
+      - "[ ] Add auto-approval cron job"
+      - "[ ] Update reputation calculation (include poster reviews)"
+      
+  comp-time-lock:
+    type: Component
+    layer: application
+    name: Time-Lock Auto-Approval
+    description: Auto-approve submissions if poster doesn't review within 24h
+    status: draft
+    priority: core
+    tasks:
+      - "[ ] Add auto_approve_at timestamp to submissions"
+      - "[ ] Create cron job to check pending submissions"
+      - "[ ] Implement autoApprove() function"
+      - "[ ] Notify poster on auto-approval"
+      
+  comp-proof-system:
+    type: Component
+    layer: application
+    name: Proof Attachment System
+    description: Workers attach evidence (screenshots, files) to submissions
+    status: draft
+    priority: supporting
+    tasks:
+      - "[ ] Add proof_url, proof_metadata to submissions"
+      - "[ ] File upload UI component"
+      - "[ ] Generate SHA256 hash on upload"
+      - "[ ] Display proof in review UI"
+      
+  comp-bidirectional-reviews:
+    type: Component
+    layer: application
+    name: Bidirectional Reviews
+    description: Workers can review posters (in addition to poster reviewing worker)
+    status: draft
+    priority: core
+    tasks:
+      - "[ ] Create task_reviews table schema"
+      - "[ ] Migration: add table + indexes"
+      - "[ ] API: POST /api/v1/tasks/:id/review-poster"
+      - "[ ] UI: review form after task completion"
+      - "[ ] Update poster reputation calculation"
+      
+  feature-dispute-resolution:
+    type: Feature
+    layer: application
+    name: Dispute Resolution
+    description: Appeal system with manual/community arbitration
+    status: draft
+    priority: supporting
+    tags:
+      - phase-2
+    tasks:
+      - "[ ] Design dispute workflow (appeal → arbitration → decision)"
+      - "[ ] Create disputes table"
+      - "[ ] API: POST /api/v1/submissions/:id/dispute"
+      - "[ ] Admin arbitration UI (Phase 2A: manual)"
+      - "[ ] Community arbitration (Phase 2B: voting)"
+      - "[ ] Insurance pool mechanism (Phase 2C)"
+
+edges:
+  # Validation dependencies
+  - from: feature-validation
+    to: feature-marketplace
+    relation: enables
+    
+  - from: feature-validation
+    to: feature-economy
+    relation: depends_on
+    
+  - from: comp-time-lock
+    to: feature-validation
+    relation: implements
+    
+  - from: comp-proof-system
+    to: feature-validation
+    relation: implements
+    
+  - from: comp-bidirectional-reviews
+    to: feature-validation
+    relation: implements
+    
+  - from: feature-dispute-resolution
+    to: feature-validation
+    relation: enables
+    
+  - from: feature-dispute-resolution
+    to: comp-bidirectional-reviews
+    relation: depends_on
