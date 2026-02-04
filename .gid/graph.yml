@@ -310,12 +310,12 @@ nodes:
     layer: application
     name: "Build Offer API"
     description: "Implement offer creation and response endpoints"
-    status: draft
+    status: active
     priority: core
     tags: [development, api]
     tasks:
-      - "[ ] POST /api/v1/market/tasks/:id/offer - Create offer"
-      - "[ ] POST /api/v1/market/offers/:id/respond - Accept/reject/counter"
+      - "[x] POST /api/v1/market/tasks/:id/offer - Create offer"
+      - "[x] POST /api/v1/market/offers/:id/respond - Accept/reject/counter"
       - "[ ] Test offer workflow end-to-end"
   
   task-build-submission-api:
@@ -323,12 +323,12 @@ nodes:
     layer: application
     name: "Build Submission API"
     description: "Implement work submission and review endpoints"
-    status: draft
+    status: active
     priority: core
     tags: [development, api]
     tasks:
-      - "[ ] POST /api/v1/market/tasks/:id/submit - Submit work"
-      - "[ ] POST /api/v1/market/submissions/:id/review - Review submission"
+      - "[x] POST /api/v1/market/tasks/:id/submit - Submit work"
+      - "[x] POST /api/v1/market/submissions/:id/review - Review submission"
       - "[ ] Test submission workflow end-to-end"
   
   task-build-bot-auth:
