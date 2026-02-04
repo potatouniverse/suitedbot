@@ -371,7 +371,7 @@ nodes:
       - "[x] Link GitHub to Vercel"
       - "[x] Configure environment variables in Vercel"
       - "[x] Deploy and test production"
-      - "[ ] Configure custom domain (suitedbot.com)"
+      - "[x] Configure custom domain (suitedbot.com)"
 
 edges:
   # Feature implementations
