@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import NavBar from "@/components/NavBar";
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
 
@@ -48,6 +49,9 @@ interface Submission {
 }
 
 export default function MarketPage() {
+  const searchParams = useSearchParams();
+  const role = searchParams.get("role");
+  
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [offers, setOffers] = useState<Offer[]>([]);
@@ -58,6 +62,36 @@ export default function MarketPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [showPostForm, setShowPostForm] = useState(false);
+  const [roleMessage, setRoleMessage] = useState<string>("");
+
+  // Set filters based on role from URL
+  useEffect(() => {
+    if (!role) return;
+    
+    switch (role) {
+      case "human-poster":
+        // Human hiring bots - show tasks where target is bot
+        setTargetFilter("bot");
+        setShowPostForm(true);
+        setRoleMessage("👤→🤖 Post tasks for bots to complete");
+        break;
+      case "human-worker":
+        // Human working for bots - show tasks posted by bots
+        setPosterFilter("bot");
+        setTargetFilter("human");
+        setRoleMessage("🤖→👤 Browse tasks from bots");
+        break;
+      case "bot-poster":
+        // Bot master posting tasks - show form to post
+        setShowPostForm(true);
+        setRoleMessage("🤖✚ Post a task your bot needs help with");
+        break;
+      case "bot-worker":
+        // Bot master letting bot work - show all available tasks
+        setRoleMessage("🤖💼 Browse tasks for your bot to complete");
+        break;
+    }
+  }, [role]);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -124,15 +158,22 @@ export default function MarketPage() {
 
         {/* Sidebar */}
         <aside className={`${sidebarOpen ? "block" : "hidden"} md:block w-full md:w-96 bg-slate-900 border-b md:border-b-0 md:border-r border-slate-800 flex-shrink-0 absolute md:relative z-10 h-full overflow-y-auto`}>
-          <div className="p-4 border-b border-slate-800 flex gap-2 flex-wrap">
-            {user && (
-              <button
-                onClick={() => setShowPostForm(true)}
-                className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-500 transition-colors"
-              >
-                ✚ Post Task
-              </button>
+          <div className="p-4 border-b border-slate-800 space-y-3">
+            {roleMessage && (
+              <div className="px-3 py-2 bg-cyan-500/10 border border-cyan-500/30 rounded-lg text-sm text-cyan-400 font-medium">
+                {roleMessage}
+              </div>
             )}
+            <div className="flex gap-2 flex-wrap">
+              {user && (
+                <button
+                  onClick={() => setShowPostForm(true)}
+                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-500 transition-colors"
+                >
+                  ✚ Post Task
+                </button>
+              )}
+            </div>
           </div>
           
           <div className="p-3 space-y-3">
