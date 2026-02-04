@@ -4,9 +4,6 @@ import { useSearchParams } from "next/navigation";
 import NavBar from "@/components/NavBar";
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
 
-// Force dynamic rendering
-export const dynamic = 'force-dynamic';
-
 interface Task {
   id: string;
   title: string;
@@ -51,7 +48,7 @@ interface Submission {
   created_at: string;
 }
 
-export default function MarketPage() {
+function MarketPageContent() {
   const searchParams = useSearchParams();
   const role = searchParams.get("role");
   
@@ -567,5 +564,17 @@ function PostTaskForm({ onClose, onCreated }: { onClose: () => void; onCreated: 
         </button>
       </form>
     </div>
+  );
+}
+
+export default function MarketPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-slate-950">
+        <div className="text-slate-400">Loading...</div>
+      </div>
+    }>
+      <MarketPageContent />
+    </Suspense>
   );
 }
