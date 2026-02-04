@@ -362,15 +362,15 @@ nodes:
     layer: infrastructure
     name: "Deploy to Vercel"
     description: "Set up Vercel deployment with environment variables"
-    status: in_progress
+    status: active
     priority: core
     tags: [deployment, devops]
     tasks:
       - "[x] Create GitHub repository"
       - "[x] Push code to GitHub"
-      - "[ ] Link GitHub to Vercel"
-      - "[ ] Configure environment variables in Vercel"
-      - "[ ] Deploy and test production"
+      - "[x] Link GitHub to Vercel"
+      - "[x] Configure environment variables in Vercel"
+      - "[x] Deploy and test production"
       - "[ ] Configure custom domain (suitedbot.com)"
 
 edges:
