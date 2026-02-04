@@ -131,7 +131,7 @@ export async function POST(
     if (submission.task.currency === "salt") {
       const { data: completer } = await supabase
         .from("users")
-        .select("salt_balance")
+        .select("salt_balance, tasks_completed, reputation")
         .eq("id", submission.task.claimed_by)
         .single();
 
