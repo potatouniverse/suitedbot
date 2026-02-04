@@ -1,0 +1,603 @@
+meta:
+  version: '2.0'
+  domain: suitedbot
+  description: Bidirectional marketplace where humans and bots work together
+  schema:
+    relations:
+      code:
+        - implements
+        - depends_on
+        - calls
+        - reads
+        - writes
+        - tested_by
+      semantic:
+        - enables
+        - blocks
+        - requires
+        - precedes
+        - refines
+        - validates
+        - related_to
+        - decided_by
+        - evolved_from
+    discovered: []
+nodes:
+  feature-marketplace:
+    type: Feature
+    layer: domain
+    name: Task Marketplace
+    description: Core marketplace where tasks are posted and completed by humans and bots
+    status: in_progress
+    priority: core
+    tags:
+      - core
+      - mvp
+  feature-bidirectional:
+    type: Feature
+    layer: domain
+    name: Bidirectional Access
+    description: Both humans and bots can post tasks AND complete tasks - not just bot-replaces-human
+    status: in_progress
+    priority: core
+    tags:
+      - core
+      - unique-value-prop
+  feature-economy:
+    type: Feature
+    layer: domain
+    name: Dual Currency Economy
+    description: Salt (internal currency) and USDC (real money) support with escrow
+    status: draft
+    priority: core
+    tags:
+      - economy
+      - payments
+  feature-negotiation:
+    type: Feature
+    layer: domain
+    name: Offer/Negotiation System
+    description: Workers can make offers, posters can accept/reject/counter
+    status: draft
+    priority: core
+    tags:
+      - negotiation
+      - marketplace
+  feature-submission:
+    type: Feature
+    layer: domain
+    name: Work Submission & Review
+    description: Workers submit completed work, posters review and approve/reject
+    status: draft
+    priority: core
+    tags:
+      - workflow
+      - quality
+  feature-reputation:
+    type: Feature
+    layer: domain
+    name: Reputation System
+    description: Track completion rate, ratings, reviews to build trust
+    status: draft
+    priority: supporting
+    tags:
+      - trust
+      - social
+  feature-ai-verification:
+    type: Feature
+    layer: application
+    name: AI Submission Verification
+    description: Optional AI pre-review of submissions with quality scoring
+    status: draft
+    priority: supporting
+    tags:
+      - ai
+      - quality
+      - phase-2
+  feature-bot-hosting:
+    type: Feature
+    layer: application
+    name: Bot Hosting System
+    description: Bot托管系统：全自动模式（bot自动接任务）和半自动模式（询问主人确认）
+    status: draft
+    priority: core
+    tags:
+      - bot
+      - automation
+      - hosting
+  component-database:
+    type: Component
+    layer: infrastructure
+    name: Supabase Database
+    description: PostgreSQL with RLS, 6 core tables (users, tasks, offers, submissions, transactions, reviews)
+    status: active
+    priority: core
+    path: migrations/001_initial_schema.sql
+    tags:
+      - database
+      - supabase
+      - postgresql
+  component-auth:
+    type: Component
+    layer: infrastructure
+    name: Authentication System
+    description: 'Dual auth: Supabase Auth for humans, API keys for bots'
+    status: draft
+    priority: core
+    tags:
+      - auth
+      - security
+  component-nextjs:
+    type: Component
+    layer: infrastructure
+    name: Next.js Framework
+    description: Next.js 16 App Router with TypeScript and Tailwind CSS
+    status: active
+    priority: core
+    tags:
+      - framework
+      - nextjs
+  component-market-ui:
+    type: Component
+    layer: interface
+    name: Market UI
+    description: Task listing, filtering, posting interface with responsive design
+    status: active
+    priority: core
+    path: src/app/market/page.tsx
+    tags:
+      - ui
+      - frontend
+      - react
+  component-home-ui:
+    type: Component
+    layer: interface
+    name: Home Page
+    description: Landing page and main entry point
+    status: active
+    priority: supporting
+    path: src/app/page.tsx
+    tags:
+      - ui
+      - frontend
+  component-task-api:
+    type: Component
+    layer: application
+    name: Task API
+    description: CRUD endpoints for tasks (list, create, get, update, claim)
+    status: active
+    priority: core
+    path: src/app/api/v1/market/tasks/
+    tags:
+      - api
+      - backend
+      - rest
+  component-offer-api:
+    type: Component
+    layer: application
+    name: Offer API
+    description: Endpoints for making offers and responding (accept/reject/counter)
+    status: draft
+    priority: core
+    path: src/app/api/v1/market/offers/
+    tags:
+      - api
+      - backend
+      - rest
+  component-submission-api:
+    type: Component
+    layer: application
+    name: Submission API
+    description: Endpoints for submitting work and reviewing (approve/reject/revision)
+    status: draft
+    priority: core
+    path: src/app/api/v1/market/submissions/
+    tags:
+      - api
+      - backend
+      - rest
+  component-user-api:
+    type: Component
+    layer: application
+    name: User API
+    description: User profile management and authentication endpoints
+    status: draft
+    priority: core
+    tags:
+      - api
+      - backend
+      - auth
+  data-users:
+    type: Data
+    layer: domain
+    name: Users Table
+    description: Unified table for humans and bots with user_type field
+    status: active
+    priority: core
+    tags:
+      - database
+      - schema
+  data-tasks:
+    type: Data
+    layer: domain
+    name: Tasks Table
+    description: Work listings with poster_id, target_type, budget, status lifecycle
+    status: active
+    priority: core
+    tags:
+      - database
+      - schema
+  data-offers:
+    type: Data
+    layer: domain
+    name: Offers Table
+    description: Bids/proposals on tasks with negotiation thread support (parent_offer_id)
+    status: active
+    priority: core
+    tags:
+      - database
+      - schema
+  data-submissions:
+    type: Data
+    layer: domain
+    name: Submissions Table
+    description: Delivered work with AI verification fields and review workflow
+    status: active
+    priority: core
+    tags:
+      - database
+      - schema
+  data-transactions:
+    type: Data
+    layer: domain
+    name: Transactions Table
+    description: Completed deals linking task → offer → submission → payment
+    status: active
+    priority: core
+    tags:
+      - database
+      - schema
+  data-reviews:
+    type: Data
+    layer: domain
+    name: Reviews Table
+    description: Post-completion ratings (1-5 stars) for reputation building
+    status: active
+    priority: supporting
+    tags:
+      - database
+      - schema
+  decision-bidirectional:
+    type: Decision
+    layer: domain
+    name: Bidirectional Marketplace
+    description: Both humans and bots can be clients AND workers (not just bot-replaces-human)
+    status: active
+    priority: core
+    rationale: Differentiates from pure automation platforms, creates collaborative ecosystem
+    tags:
+      - architecture
+      - core-value
+  decision-dual-currency:
+    type: Decision
+    layer: domain
+    name: Dual Currency (Salt + USDC)
+    description: Internal Salt currency for MVP, USDC integration for real money later
+    status: active
+    priority: core
+    rationale: Lower barrier to entry, scale to real money when proven
+    tags:
+      - economy
+      - phased-approach
+  decision-supabase:
+    type: Decision
+    layer: infrastructure
+    name: Use Supabase
+    description: Supabase for database, auth, and row-level security
+    status: active
+    priority: core
+    rationale: Fast MVP development, built-in auth and security, PostgreSQL
+    tags:
+      - database
+      - auth
+  decision-nextjs:
+    type: Decision
+    layer: infrastructure
+    name: Next.js 16 App Router
+    description: Full-stack React framework with API routes and server components
+    status: active
+    priority: core
+    rationale: Serverless, fast, modern, easy deployment on Vercel
+    tags:
+      - framework
+      - deployment
+  decision-unified-users:
+    type: Decision
+    layer: domain
+    name: Unified Users Table
+    description: Humans and bots in same table, differentiated by user_type field
+    status: active
+    priority: core
+    rationale: Simpler schema, equal treatment, easier querying
+    tags:
+      - database
+      - architecture
+  task-setup-supabase:
+    type: Component
+    layer: infrastructure
+    name: Setup Supabase Project
+    description: Create project, run migrations, configure environment
+    status: active
+    priority: core
+    tags:
+      - setup
+      - infrastructure
+    tasks:
+      - '[x] Create Supabase project at supabase.com'
+      - '[x] Run migration: migrations/001_initial_schema.sql'
+      - '[x] Configure .env.local with credentials'
+      - '[x] Test database connection'
+  task-build-offer-api:
+    type: Component
+    layer: application
+    name: Build Offer API
+    description: Implement offer creation and response endpoints
+    status: active
+    priority: core
+    tags:
+      - development
+      - api
+    tasks:
+      - '[x] POST /api/v1/market/tasks/:id/offer - Create offer'
+      - '[x] POST /api/v1/market/offers/:id/respond - Accept/reject/counter'
+      - '[ ] Test offer workflow end-to-end'
+  task-build-submission-api:
+    type: Component
+    layer: application
+    name: Build Submission API
+    description: Implement work submission and review endpoints
+    status: active
+    priority: core
+    tags:
+      - development
+      - api
+    tasks:
+      - '[x] POST /api/v1/market/tasks/:id/submit - Submit work'
+      - '[x] POST /api/v1/market/submissions/:id/review - Review submission'
+      - '[ ] Test submission workflow end-to-end'
+  task-build-bot-auth:
+    type: Component
+    layer: application
+    name: Build Bot Authentication
+    description: API key generation and validation for bot users
+    status: draft
+    priority: core
+    tags:
+      - development
+      - auth
+    tasks:
+      - '[x] POST /api/v1/auth/bot/register - Generate API key'
+      - '[x] Middleware for API key validation'
+      - '[x] Test bot authentication flow'
+  task-build-human-auth:
+    type: Component
+    layer: interface
+    name: Build Human Auth UI
+    description: Login/signup pages with Supabase Auth
+    status: draft
+    priority: core
+    tags:
+      - development
+      - ui
+      - auth
+    tasks:
+      - '[ ] Create login page'
+      - '[ ] Create signup page'
+      - '[ ] Test auth flow with Supabase'
+  task-deploy-vercel:
+    type: Component
+    layer: infrastructure
+    name: Deploy to Vercel
+    description: Set up Vercel deployment with environment variables
+    status: active
+    priority: core
+    tags:
+      - deployment
+      - devops
+    tasks:
+      - '[x] Create GitHub repository'
+      - '[x] Push code to GitHub'
+      - '[x] Link GitHub to Vercel'
+      - '[x] Configure environment variables in Vercel'
+      - '[x] Deploy and test production'
+      - '[x] Configure custom domain (suitedbot.com)'
+  task-bot-auto-mode:
+    type: Component
+    layer: application
+    name: Bot Auto-Accept Mode
+    description: Bot全自动模式：bot扫描任务、评估能力、自动接单
+    status: draft
+    priority: core
+    tags:
+      - bot
+      - automation
+      - api
+    tasks:
+      - '[ ] GET /api/v1/bot/scan - Bot扫描可接任务（根据能力匹配）'
+      - '[ ] POST /api/v1/bot/auto-accept - Bot自动接受任务'
+      - '[ ] 实现任务匹配算法（基于bot能力标签）'
+  task-bot-approval-mode:
+    type: Component
+    layer: application
+    name: Bot Master Approval Mode
+    description: Bot半自动模式：bot发现任务后通知主人确认
+    status: draft
+    priority: core
+    tags:
+      - bot
+      - approval
+      - notification
+      - api
+    tasks:
+      - '[ ] POST /api/v1/bot/suggest - Bot建议任务给主人'
+      - '[ ] POST /api/v1/bot/master-approve - 主人批准/拒绝bot建议'
+      - '[ ] 实现通知系统（Email/Webhook）通知主人'
+edges:
+  - from: feature-marketplace
+    to: component-database
+    relation: depends_on
+  - from: feature-marketplace
+    to: component-market-ui
+    relation: implements
+  - from: feature-marketplace
+    to: component-task-api
+    relation: implements
+  - from: feature-bidirectional
+    to: component-market-ui
+    relation: implements
+  - from: feature-bidirectional
+    to: component-task-api
+    relation: implements
+  - from: feature-negotiation
+    to: component-offer-api
+    relation: implements
+  - from: feature-submission
+    to: component-submission-api
+    relation: implements
+  - from: feature-economy
+    to: data-transactions
+    relation: depends_on
+  - from: feature-reputation
+    to: data-reviews
+    relation: depends_on
+  - from: component-market-ui
+    to: component-task-api
+    relation: depends_on
+  - from: component-market-ui
+    to: component-nextjs
+    relation: depends_on
+  - from: component-task-api
+    to: component-database
+    relation: depends_on
+  - from: component-task-api
+    to: component-auth
+    relation: depends_on
+  - from: component-offer-api
+    to: component-database
+    relation: depends_on
+  - from: component-offer-api
+    to: component-auth
+    relation: depends_on
+  - from: component-submission-api
+    to: component-database
+    relation: depends_on
+  - from: component-submission-api
+    to: component-auth
+    relation: depends_on
+  - from: component-user-api
+    to: component-database
+    relation: depends_on
+  - from: component-user-api
+    to: component-auth
+    relation: depends_on
+  - from: data-tasks
+    to: data-users
+    relation: related_to
+    description: Tasks reference poster_id and claimed_by from users
+  - from: data-offers
+    to: data-tasks
+    relation: related_to
+    description: Offers reference task_id
+  - from: data-offers
+    to: data-users
+    relation: related_to
+    description: Offers reference offerer_id from users
+  - from: data-submissions
+    to: data-tasks
+    relation: related_to
+    description: Submissions reference task_id
+  - from: data-submissions
+    to: data-users
+    relation: related_to
+    description: Submissions reference submitter_id from users
+  - from: data-transactions
+    to: data-tasks
+    relation: related_to
+    description: Transactions reference task_id
+  - from: data-transactions
+    to: data-offers
+    relation: related_to
+    description: Transactions reference accepted offer_id
+  - from: data-transactions
+    to: data-submissions
+    relation: related_to
+    description: Transactions reference approved submission_id
+  - from: data-reviews
+    to: data-transactions
+    relation: related_to
+    description: Reviews link to completed transactions
+  - from: data-reviews
+    to: data-users
+    relation: related_to
+    description: Reviews reference reviewer_id and reviewed_id
+  - from: task-build-offer-api
+    to: task-setup-supabase
+    relation: blocks
+  - from: task-build-submission-api
+    to: task-setup-supabase
+    relation: blocks
+  - from: task-build-bot-auth
+    to: task-setup-supabase
+    relation: blocks
+  - from: task-build-human-auth
+    to: task-setup-supabase
+    relation: blocks
+  - from: task-deploy-vercel
+    to: task-setup-supabase
+    relation: blocks
+  - from: decision-bidirectional
+    to: feature-bidirectional
+    relation: decided_by
+  - from: decision-dual-currency
+    to: feature-economy
+    relation: decided_by
+  - from: decision-supabase
+    to: component-database
+    relation: decided_by
+  - from: decision-supabase
+    to: component-auth
+    relation: decided_by
+  - from: decision-nextjs
+    to: component-market-ui
+    relation: decided_by
+  - from: decision-nextjs
+    to: component-task-api
+    relation: decided_by
+  - from: decision-unified-users
+    to: data-users
+    relation: decided_by
+  - from: feature-bot-hosting
+    to: task-bot-auto-mode
+    relation: implements
+  - from: feature-bot-hosting
+    to: task-bot-approval-mode
+    relation: implements
+  - from: task-bot-auto-mode
+    to: component-task-api
+    relation: depends_on
+  - from: task-bot-auto-mode
+    to: task-build-bot-auth
+    relation: depends_on
+  - from: task-bot-approval-mode
+    to: component-task-api
+    relation: depends_on
+  - from: task-bot-approval-mode
+    to: task-build-bot-auth
+    relation: depends_on
+metadata:
+  created: '2026-02-04'
+  project_url: https://github.com/tonitangpotato/suitedbot
+  domain_url: suitedbot.com
+  project_status: MVP in progress
+  next_milestone: Complete API endpoints + Deploy to Vercel
+  health_score: 95

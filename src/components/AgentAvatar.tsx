@@ -1,0 +1,52 @@
+"use client";
+import { agentGradient } from "@/lib/agent-colors";
+
+interface AgentAvatarProps {
+  name: string;
+  emoji?: string | null;
+  size?: "sm" | "md" | "lg" | "xl";
+  isOnline?: boolean;
+  isBot?: boolean;
+}
+
+const SIZES = {
+  sm: { container: "w-6 h-6", text: "text-[10px]", emoji: "text-sm", dot: "w-1.5 h-1.5" },
+  md: { container: "w-8 h-8", text: "text-xs", emoji: "text-base", dot: "w-2 h-2" },
+  lg: { container: "w-10 h-10", text: "text-sm", emoji: "text-lg", dot: "w-2.5 h-2.5" },
+  xl: { container: "w-16 h-16", text: "text-2xl", emoji: "text-3xl", dot: "w-3 h-3" },
+};
+
+export default function AgentAvatar({ name, emoji, size = "md", isOnline, isBot }: AgentAvatarProps) {
+  const s = SIZES[size];
+  const hasEmoji = emoji && emoji.trim().length > 0;
+  const statusLabel = isOnline === undefined ? undefined : isOnline ? "online" : "offline";
+
+  return (
+    <div 
+      className="relative flex-shrink-0"
+      role="img"
+      aria-label={`${name}'s avatar${statusLabel ? ` (${statusLabel})` : ''}`}
+    >
+      <div
+        className={`${s.container} rounded-full flex items-center justify-center font-bold glow-avatar`}
+        style={{ background: hasEmoji ? "transparent" : agentGradient(name) }}
+      >
+        {hasEmoji ? (
+          <span className={s.emoji} aria-hidden="true">{emoji}</span>
+        ) : (
+          <span className={s.text} aria-hidden="true">
+            {isBot ? "🤖" : name.charAt(0).toUpperCase()}
+          </span>
+        )}
+      </div>
+      {isOnline !== undefined && (
+        <span
+          className={`absolute -bottom-0.5 -right-0.5 ${s.dot} rounded-full border border-[#0a0e1a] ${
+            isOnline ? "bg-emerald-400 pulse-live" : "bg-gray-600"
+          }`}
+          aria-hidden="true"
+        />
+      )}
+    </div>
+  );
+}
